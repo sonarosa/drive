@@ -1,0 +1,95 @@
+#log transform 
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Function to apply log transformation
+def apply_log_transformation(image, c):
+    # Apply log transformation
+    log_image = c * (np.log1p(image))  # Using log1p for numerical stability
+    # Normalize to the 8-bit range
+    log_image = np.clip(log_image, 0, 255)
+    return np.array(log_image, dtype=np.uint8)
+
+# Read an image
+image = cv2.imread('/content/lena.jpeg', cv2.IMREAD_GRAYSCALE)
+
+# Check if the image has a narrow range of low gray-level values
+if np.max(image) < 100:
+    print("The image has a narrow range of low gray-level values.")
+
+# Experiment with different values of c
+c_values = [10, 50, 100, 255 / np.log1p(np.max(image))]
+
+# Apply log transformation for different c values
+transformed_images = []
+for c in c_values:
+    log_image = apply_log_transformation(image, c)
+    transformed_images.append((c, log_image))
+
+# Plot original image and histograms
+plt.figure(figsize=(12, 8))
+
+# Original image
+plt.subplot(2, len(c_values) + 1, 1)
+plt.title("Original Image")
+plt.imshow(image, cmap='gray')
+plt.axis('off')
+
+plt.subplot(2, len(c_values) + 1, len(c_values) + 2)
+plt.title("Histogram (Original)")
+plt.hist(image.ravel(), bins=256, range=(0, 255), color='blue', alpha=0.7)
+plt.xlabel('Pixel Intensity')
+plt.ylabel('Frequency')
+
+# Transformed images and their histograms
+for i, (c, log_image) in enumerate(transformed_images):
+    plt.subplot(2, len(c_values) + 1, i + 2)
+    plt.title(f"Log Transformed (c={c:.2f})")
+    plt.imshow(log_image, cmap='gray')
+    plt.axis('off')
+
+    plt.subplot(2, len(c_values) + 1, len(c_values) + i + 3)
+    plt.title(f"Histogram (c={c:.2f})")
+    plt.hist(log_image.ravel(), bins=256, range=(0, 255), color='blue', alpha=0.7)
+    plt.xlabel('Pixel Intensity')
+    plt.ylabel('Frequency')
+
+plt.tight_layout()
+plt.show()
+
+#dilute
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Load a binary image
+# Replace 'binary_image.png' with your binary image file
+image = cv2.imread('/content/flower.jpg', cv2.IMREAD_GRAYSCALE)
+
+# Threshold the image to ensure it's binary
+_, binary = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
+
+# Create a kernel
+kernel = np.ones((5, 5), np.uint8)
+
+# Apply morphological operations
+erosion = cv2.erode(binary, kernel, iterations=1)
+dilation = cv2.dilate(binary, kernel, iterations=1)
+opening = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
+closing = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
+
+# Plot the results
+titles = ['Original', 'Erosion', 'Dilation', 'Opening', 'Closing']
+images = [binary, erosion, dilation, opening, closing]
+
+plt.figure(figsize=(15, 10))
+for i in range(5):
+    plt.subplot(2, 3, i + 1)
+    plt.imshow(images[i], cmap='gray')
+    plt.title(titles[i])
+    plt.axis('off')
+
+plt.tight_layout()
+plt.show()
+

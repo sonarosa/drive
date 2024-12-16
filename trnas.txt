@@ -1,0 +1,99 @@
+trnsform
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+def KLT(a):
+    """
+    Computes the Karhunen-Loève Transform (KLT) of the input array.
+    Returns:
+    - KLT result
+    - Transformation matrix (eigenvectors)
+    - Eigenvalues of the covariance matrix
+    """
+    # Compute eigenvalues and eigenvectors of the covariance matrix
+    val, vec = np.linalg.eig(np.cov(a))
+    # Compute the KLT
+    klt = np.dot(vec, a)
+    return klt, vec, val
+
+# Load Lena image in grayscale
+lena_path = '/content/lena.jpeg'
+image_lena = cv2.imread(lena_path, cv2.IMREAD_GRAYSCALE)
+
+if image_lena is None:
+    raise FileNotFoundError(f"Lena image not found at path: {lena_path}")
+
+# Reshape the Lena image into a 2D matrix for KLT
+reshaped_image_lena = image_lena.T  # Transpose to match expected input format for KLT
+
+# Apply the KLT on Lena image
+klt_result_lena, eigenvectors_lena, eigenvalues_lena = KLT(reshaped_image_lena)
+
+# KLT-transformed Lena image reshaped back for visualization
+transformed_image_lena = klt_result_lena.T
+
+# Load another grayscale image for DFT and Z-transform
+image_path = '/content/lena.jpeg'
+image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+
+if image is None:
+    raise FileNotFoundError(f"Image not found at path: {image_path}")
+
+# Convert the image to float for processing
+image_float = np.float32(image)
+
+# 1. Discrete Fourier Transform (DFT)
+dft = cv2.dft(image_float, flags=cv2.DFT_COMPLEX_OUTPUT)
+dft_shift = np.fft.fftshift(dft)  # Shift the zero-frequency component to the center
+magnitude_spectrum = 20 * np.log(cv2.magnitude(dft_shift[:, :, 0], dft_shift[:, :, 1]))
+
+# 2. Z-Transform (2D version for visualization)
+def z_transform(image, z_val=1):
+    """
+    Computes a 2D Z-Transform for visualization.
+    Args:
+    - image: Input grayscale image
+    - z_val: Z-transform parameter
+    Returns:
+    - Z-transformed image (absolute values)
+    """
+    rows, cols = image.shape
+    z_transform_image = np.zeros_like(image, dtype=np.complex128)
+    for u in range(rows):
+        for v in range(cols):
+            z_transform_image[u, v] = image[u, v] * (z_val ** (u + v))
+    return np.abs(z_transform_image)
+
+z_val = 1.2  # Change this value for different transformations
+z_transformed = z_transform(image, z_val=z_val)
+
+# 3. Karhunen-Loève Transform (KLT using PCA for the second image)
+mean, eigenvectors_image = cv2.PCACompute(image.reshape(-1, 1), mean=None)
+projected = cv2.PCAProject(image.reshape(-1, 1), mean, eigenvectors_image)
+klt_image = projected.reshape(image.shape)
+
+# Plot the results
+plt.figure(figsize=(16, 12))
+
+# Lena image results
+plt.subplot(3, 3, 2)
+plt.title("Original Lena Image")
+plt.imshow(image_lena, cmap='gray')
+
+plt.subplot(3, 3, 4)
+plt.title("KLT Transformed Lena Image")
+plt.imshow(transformed_image_lena, cmap='gray')
+
+plt.subplot(3, 3, 5)
+plt.title("DFT Magnitude Spectrum")
+plt.imshow(magnitude_spectrum, cmap='gray')
+
+plt.subplot(3, 3, 6)
+plt.title("Z-Transform")
+plt.imshow(z_transformed, cmap='gray')
+
+
+plt.tight_layout()
+plt.show()
+

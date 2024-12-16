@@ -1,0 +1,82 @@
+#geometric mean
+def geometric_mean_filter(image, kernel_size):
+    """
+    Apply a geometric mean filter to an image without built-in functions.
+    image: Grayscale image as a 2D numpy array.
+    kernel_size: Size of the filter (e.g., 3 for a 3x3 kernel).
+    """
+    rows, cols = image.shape
+    filtered_image = np.zeros_like(image, dtype=np.float32)
+    pad_size = kernel_size // 2
+    padded_image = np.pad(image, pad_size, mode='constant', constant_values=1)
+
+    for i in range(rows):
+        for j in range(cols):
+            neighborhood = padded_image[i:i+kernel_size, j:j+kernel_size]
+            geo_mean = np.prod(neighborhood) ** (1 / (kernel_size * kernel_size))  # Geometric mean formula
+            filtered_image[i, j] = geo_mean
+
+    return np.clip(filtered_image, 0, 255).astype('uint8')
+#mode
+
+from scipy.stats import mode
+
+def mode_filter(image, kernel_size):
+    """
+    Apply a mode filter to an image without built-in functions.
+    image: Grayscale image as a 2D numpy array.
+    kernel_size: Size of the filter (e.g., 3 for a 3x3 kernel).
+    """
+    rows, cols = image.shape
+    filtered_image = np.zeros_like(image, dtype=np.float32)
+    pad_size = kernel_size // 2
+    padded_image = np.pad(image, pad_size, mode='constant', constant_values=0)
+
+    for i in range(rows):
+        for j in range(cols):
+            neighborhood = padded_image[i:i+kernel_size, j:j+kernel_size]
+            mode_value = mode(neighborhood, axis=None)[0][0]  # Compute the mode manually
+            filtered_image[i, j] = mode_value
+
+    return filtered_image.astype('uint8')
+
+#median
+def median_filter(image, kernel_size):
+    """
+    Apply a median filter to an image without built-in functions.
+    image: Grayscale image as a 2D numpy array.
+    kernel_size: Size of the filter (e.g., 3 for a 3x3 kernel).
+    """
+    rows, cols = image.shape
+    filtered_image = np.zeros_like(image, dtype=np.float32)
+    pad_size = kernel_size // 2
+    padded_image = np.pad(image, pad_size, mode='constant', constant_values=0)
+
+    for i in range(rows):
+        for j in range(cols):
+            neighborhood = padded_image[i:i+kernel_size, j:j+kernel_size]
+            median_value = np.median(neighborhood)  # Compute the median manually
+            filtered_image[i, j] = median_value
+
+    return filtered_image.astype('uint8')
+#example
+
+# Load a grayscale image
+image = cv2.imread('example.jpg', cv2.IMREAD_GRAYSCALE)  # Replace with your image path
+
+# Kernel size for filtering
+kernel_size = 3
+
+# Apply the filters
+median_filtered = median_filter(image, kernel_size)
+mode_filtered = mode_filter(image, kernel_size)
+geometric_mean_filtered = geometric_mean_filter(image, kernel_size)
+
+# Display the results
+plt.figure(figsize=(12, 8))
+plt.subplot(221), plt.imshow(image, cmap='gray'), plt.title("Original Image")
+plt.subplot(222), plt.imshow(median_filtered, cmap='gray'), plt.title("Median Filter")
+plt.subplot(223), plt.imshow(mode_filtered, cmap='gray'), plt.title("Mode Filter")
+plt.subplot(224), plt.imshow(geometric_mean_filtered, cmap='gray'), plt.title("Geometric Mean Filter")
+plt.tight_layout()
+plt.show()

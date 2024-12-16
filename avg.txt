@@ -1,0 +1,50 @@
+import numpy as np
+import cv2
+import matplotlib.pyplot as plt
+
+def averaging_filter(image, kernel_size):
+    """
+    Apply an averaging filter to an image without built-in functions.
+    image: Grayscale image as a 2D numpy array.
+    kernel_size: Size of the filter (e.g., 3 for a 3x3 kernel).
+    """
+    # Get image dimensions
+    rows, cols = image.shape
+    
+    # Create an empty output image
+    filtered_image = np.zeros_like(image, dtype=np.float32)
+    
+    # Define the padding size
+    pad_size = kernel_size // 2
+    
+    # Pad the image to handle border pixels
+    padded_image = np.pad(image, pad_size, mode='constant', constant_values=0)
+    
+    # Loop over each pixel of the image
+    for i in range(rows):
+        for j in range(cols):
+            # Extract the neighborhood
+            neighborhood = padded_image[i:i+kernel_size, j:j+kernel_size]
+            
+            # Compute the average of the neighborhood
+            mean_value = np.sum(neighborhood) / (kernel_size * kernel_size)
+            
+            # Assign the computed value to the output image
+            filtered_image[i, j] = mean_value
+    
+    # Convert back to uint8 format (image format)
+    filtered_image = np.clip(filtered_image, 0, 255).astype('uint8')
+    return filtered_image
+
+# Load a grayscale image
+image = cv2.imread('lena.jpeg', cv2.IMREAD_GRAYSCALE)  # Replace with your image path
+
+# Apply the averaging filter
+kernel_size = 3  # Size of the averaging filter
+filtered_image = averaging_filter(image, kernel_size)
+
+# Display the original and filtered images
+plt.figure(figsize=(10, 5))
+plt.subplot(121), plt.imshow(image, cmap='gray'), plt.title("Original Image")
+plt.subplot(122), plt.imshow(filtered_image, cmap='gray'), plt.title("Averaging Filter")
+plt.show()

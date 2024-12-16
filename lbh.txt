@@ -1,0 +1,77 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Function to apply a filter in the frequency domain
+def apply_filter(image, filter_type, low_cutoff=None, high_cutoff=None):
+    # Convert the image to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if len(image.shape) == 3 else image
+    
+    # Compute the DFT of the image
+    dft = np.fft.fft2(gray)
+    dft_shift = np.fft.fftshift(dft)  # Shift the zero frequency to the center
+    
+    # Get the shape of the image
+    rows, cols = gray.shape
+    crow, ccol = rows // 2, cols // 2  # Center of the image
+    
+    # Create a mask
+    mask = np.ones((rows, cols), np.float32)
+    
+    if filter_type == 'low-pass':
+        # Low-pass filter: Circular mask to keep low frequencies
+        radius = low_cutoff
+        y, x = np.ogrid[:rows, :cols]
+        distance = np.sqrt((x - ccol)**2 + (y - crow)**2)
+        mask[distance > radius] = 0
+    
+    elif filter_type == 'high-pass':
+        # High-pass filter: Circular mask to remove low frequencies
+        radius = high_cutoff
+        y, x = np.ogrid[:rows, :cols]
+        distance = np.sqrt((x - ccol)**2 + (y - crow)**2)
+        mask[distance <= radius] = 0
+    
+    elif filter_type == 'band-pass':
+        # Band-pass filter: Mask to keep frequencies within a range
+        y, x = np.ogrid[:rows, :cols]
+        distance = np.sqrt((x - ccol)**2 + (y - crow)**2)
+        mask[(distance < low_cutoff) | (distance > high_cutoff)] = 0
+    
+    elif filter_type == 'band-reject':
+        # Band-reject filter: Mask to block frequencies within a range
+        y, x = np.ogrid[:rows, :cols]
+        distance = np.sqrt((x - ccol)**2 + (y - crow)**2)
+        mask[(distance >= low_cutoff) & (distance <= high_cutoff)] = 0
+    
+    else:
+        raise ValueError("Invalid filter type. Choose from 'low-pass', 'high-pass', 'band-pass', 'band-reject'.")
+    
+    # Apply the mask to the DFT
+    filtered_dft = dft_shift * mask
+    
+    # Compute the inverse DFT to get the filtered image
+    filtered_dft_shift = np.fft.ifftshift(filtered_dft)
+    filtered_image = np.fft.ifft2(filtered_dft_shift)
+    filtered_image = np.abs(filtered_image)
+    
+    return filtered_image
+
+# Load an image
+image = cv2.imread('lena.jpeg')  # Replace with your image path
+
+# Apply different filters
+low_pass_image = apply_filter(image, 'low-pass', low_cutoff=30)
+high_pass_image = apply_filter(image, 'high-pass', high_cutoff=30)
+band_pass_image = apply_filter(image, 'band-pass', low_cutoff=20, high_cutoff=50)
+band_reject_image = apply_filter(image, 'band-reject', low_cutoff=20, high_cutoff=50)
+
+# Display the results
+plt.figure(figsize=(12, 8))
+plt.subplot(231), plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)), plt.title("Original Image")
+plt.subplot(232), plt.imshow(low_pass_image, cmap='gray'), plt.title("Low-Pass Filter")
+plt.subplot(233), plt.imshow(high_pass_image, cmap='gray'), plt.title("High-Pass Filter")
+plt.subplot(234), plt.imshow(band_pass_image, cmap='gray'), plt.title("Band-Pass Filter")
+plt.subplot(235), plt.imshow(band_reject_image, cmap='gray'), plt.title("Band-Reject Filter")
+plt.tight_layout()
+plt.show()

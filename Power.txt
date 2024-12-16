@@ -1,0 +1,43 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Power-law transformation function
+def power_law_transformation(image, gamma=1.0, c=1.0):
+    # Convert image to float32 and normalize to [0, 1]
+    image_float = np.float32(image) / 255.0
+    # Apply power-law transformation
+    power_law_image = c * np.power(image_float, gamma)
+    # Scale back to the 8-bit range
+    power_law_image = np.uint8(255 * power_law_image)
+    return power_law_image
+
+# Load different types of images
+images = {
+    'Ordinary': cv2.imread('/content/lenna.png', cv2.IMREAD_GRAYSCALE),
+    'Medical': cv2.imread('/content/medical.jpg', cv2.IMREAD_GRAYSCALE),
+    'Satellite': cv2.imread('/content/satellite.jpg', cv2.IMREAD_GRAYSCALE),
+    'Natural': cv2.imread('/content/nature.jpg', cv2.IMREAD_GRAYSCALE)
+}
+
+# Gamma values to test
+gammas = [0.5, 1.0, 2.0]
+
+# Plotting the images in rows, with each row corresponding to a different image type
+fig, axes = plt.subplots(len(images), len(gammas) + 1, figsize=(15, 10))
+
+for row, (title, image) in enumerate(images.items()):
+    # Display the original image in the first column
+    axes[row, 0].imshow(image, cmap='gray')
+    axes[row, 0].set_title(f'{title} - Original')
+    axes[row, 0].axis('off')
+
+    # Display transformed images for each gamma value
+    for col, gamma in enumerate(gammas, start=1):
+        transformed_image = power_law_transformation(image, gamma)
+        axes[row, col].imshow(transformed_image, cmap='gray')
+        axes[row, col].set_title(f'{title} - Gamma={gamma}')
+        axes[row, col].axis('off')
+
+plt.tight_layout()
+plt.show()

@@ -1,0 +1,102 @@
+import cv2
+
+import numpy as np
+
+import matplotlib.pyplot as plt
+
+# Load the image in grayscale
+
+image = cv2.imread(’apple.jpg’, cv2.IMREAD_GRAYSCALE)
+
+# Apply global thresholding
+
+_, global_thresh = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
+
+# Apply adaptive thresholding
+
+adaptive_thresh = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+
+cv2.THRESH_BINARY, 11, 2)
+
+# Display the results
+
+plt.figure(figsize=(10, 5))
+
+plt.subplot(1, 2, 1), plt.title("Global Threshold"), plt.imshow(global_thresh, cmap=’gray’)
+
+plt.subplot(1, 2, 2), plt.title("Adaptive Threshold"), plt.imshow(adaptive_thresh, cmap=’gray’)
+
+plt.show()
+
+# Load the image in grayscale
+
+image = cv2.imread(’image.jpg’)
+
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+# Apply Otsu’s thresholding
+
+_, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+# Perform morphological operations
+
+kernel = np.ones((3, 3), np.uint8)
+
+opening = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel, iterations=2)
+
+# Identify sure background and sure foreground
+
+sure_bg = cv2.dilate(opening, kernel, iterations=3)
+
+dist_transform = cv2.distanceTransform(opening, cv2.DIST_L2, 5)
+
+_, sure_fg = cv2.threshold(dist_transform, 0.7 * dist_transform.max(), 255, 0)
+
+# Unknown regions
+
+sure_fg = np.uint8(sure_fg)
+
+unknown = cv2.subtract(sure_bg, sure_fg)
+# Label the markers
+
+_, markers = cv2.connectedComponents(sure_fg)
+
+markers += 1
+
+markers[unknown == 255] = 0
+
+# Apply Watershed
+
+markers = cv2.watershed(image, markers)
+
+image[markers == -1] = [255, 0, 0]
+
+# Display the result
+
+plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+
+plt.title("Watershed Segmentation")
+
+plt.show()
+
+# Load the image in grayscale
+
+image = cv2.imread(’image.jpg’, cv2.IMREAD_GRAYSCALE)
+
+# Apply Gaussian Blur
+
+blurred = cv2.GaussianBlur(image, (5, 5), 0)
+
+# Use Canny Edge Detection
+
+edges = cv2.Canny(blurred, 100, 200)
+
+# Display the results
+
+plt.figure(figsize=(6, 6))
+
+plt.title("Edge-Based Segmentation")
+
+plt.imshow(edges, cmap=’gray’)
+
+plt.show()

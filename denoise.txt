@@ -1,0 +1,19 @@
+from skimage.restoration import denoise_tv_chambolle
+from skimage.util import random_noise
+
+# Load a clean image
+image = cv2.imread('example.jpg', cv2.IMREAD_GRAYSCALE)  # Replace with your path
+
+# Add Gaussian noise
+noisy_image = random_noise(image, mode='gaussian', var=0.01)
+noisy_image = np.array(255 * noisy_image, dtype='uint8')
+
+# Apply Total Variation Denoising
+denoised_image = denoise_tv_chambolle(noisy_image, weight=0.1, multichannel=False)
+
+# Display results
+plt.figure(figsize=(12, 6))
+plt.subplot(131), plt.imshow(image, cmap='gray'), plt.title("Original Image")
+plt.subplot(132), plt.imshow(noisy_image, cmap='gray'), plt.title("Noisy Image")
+plt.subplot(133), plt.imshow(denoised_image, cmap='gray'), plt.title("Denoised Image")
+plt.show()

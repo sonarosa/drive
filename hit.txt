@@ -1,0 +1,119 @@
+import cv2
+import numpy as np
+from skimage.exposure import match_histograms
+from skimage.measure import shannon_entropy
+import matplotlib.pyplot as plt
+
+# Load the original grayscale image
+image = cv2.imread('/content/color_lena.jpeg', cv2.IMREAD_GRAYSCALE)
+if image is None:
+    raise FileNotFoundError("Original image not found. Please check the file path.")
+
+# Load the reference grayscale image
+reference_image = cv2.imread('/content/lena.jpeg', cv2.IMREAD_GRAYSCALE)
+if reference_image is None:
+    raise FileNotFoundError("Reference image not found. Please check the file path.")
+
+# 1. Histogram Equalization
+equalized_image = cv2.equalizeHist(image)
+
+# 2. Histogram Matching
+matched_image = match_histograms(image, reference_image, channel_axis=None)
+
+# 3. Quantitative Comparison - Compute Entropy
+original_entropy = shannon_entropy(image)
+reference_entropy = shannon_entropy(reference_image)
+equalized_entropy = shannon_entropy(equalized_image)
+matched_entropy = shannon_entropy(matched_image)
+
+# Display results
+plt.figure(figsize=(16, 12))
+
+# Original Image
+plt.subplot(4, 2, 1)
+plt.title("Original Image")
+plt.imshow(image, cmap='gray')
+
+# Original Image Histogram
+plt.subplot(4, 2, 2)
+plt.title("Original Image Histogram")
+plt.hist(image.ravel(), bins=256, range=(0, 256), color='blue', alpha=0.7)
+
+# Reference Image
+plt.subplot(4, 2, 3)
+plt.title("Reference Image")
+plt.imshow(reference_image, cmap='gray')
+
+# Reference Image Histogram
+plt.subplot(4, 2, 4)
+plt.title("Reference Image Histogram")
+plt.hist(reference_image.ravel(), bins=256, range=(0, 256), color='orange', alpha=0.7)
+
+# Equalized Image
+plt.subplot(4, 2, 5)
+plt.title("Histogram Equalized Image")
+plt.imshow(equalized_image, cmap='gray')
+
+# Equalized Image Histogram
+plt.subplot(4, 2, 6)
+plt.title("Equalized Image Histogram")
+plt.hist(equalized_image.ravel(), bins=256, range=(0, 256), color='green', alpha=0.7)
+
+# Matched Image
+plt.subplot(4, 2, 7)
+plt.title("Histogram Matched Image")
+plt.imshow(matched_image, cmap='gray')
+
+# Matched Image Histogram
+plt.subplot(4, 2, 8)
+plt.title("Matched Image Histogram")
+plt.hist(matched_image.ravel(), bins=256, range=(0, 256), color='purple', alpha=0.7)
+
+plt.tight_layout()
+plt.show()
+
+# Print Entropy Metrics
+print("Entropy (Original Image):", original_entropy)
+print("Entropy (Reference Image):", reference_entropy)
+print("Entropy (Equalized Image):", equalized_entropy)
+print("Entropy (Matched Image):", matched_entropy)
+
+def contrast_enhancement(image):
+    """
+    Enhance the contrast of a low-contrast image using CLAHE.
+    """
+    # Create CLAHE object
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    enhanced_image = clahe.apply(image)
+    return enhanced_image
+
+# Load a low-contrast image
+low_contrast_image = cv2.imread('low_contrast.jpg', cv2.IMREAD_GRAYSCALE)
+
+if low_contrast_image is None:
+    raise FileNotFoundError("Low-contrast image not found. Please check the file path.")
+
+# Apply contrast enhancement
+enhanced_image = contrast_enhancement(low_contrast_image)
+
+# Quantitative Evaluation - Entropy
+original_entropy = shannon_entropy(low_contrast_image)
+enhanced_entropy = shannon_entropy(enhanced_image)
+
+# Display results
+plt.figure(figsize=(12, 6))
+
+plt.subplot(1, 2, 1)
+plt.title("Original Low-Contrast Image")
+plt.imshow(low_contrast_image, cmap='gray')
+
+plt.subplot(1, 2, 2)
+plt.title("Contrast Enhanced Image (CLAHE)")
+plt.imshow(enhanced_image, cmap='gray')
+
+plt.tight_layout()
+plt.show()
+
+# Print Entropy Metrics
+print("Entropy (Original Low-Contrast Image):", original_entropy)
+print("Entropy (Enhanced Image):", enhanced_entropy)

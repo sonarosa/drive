@@ -1,0 +1,117 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Function to convert RGB to HSI
+def rgb_to_hsi(image):
+    # Normalize the RGB values to [0, 1]
+    image = image / 255.0
+    R, G, B = image[:,:,0], image[:,:,1], image[:,:,2]
+    H, S, I = np.zeros_like(R), np.zeros_like(G), np.zeros_like(B)
+
+    # Calculate Intensity
+    I = (R + G + B) / 3.0
+
+    # Calculate Saturation
+    min_rgb = np.minimum(np.minimum(R, G), B)
+    S = 1 - (min_rgb / (I + 1e-6))  # Adding a small epsilon to avoid division by zero
+
+    # Calculate Hue
+    numerator = 0.5 * ((R - G) + (R - B))
+    denominator = np.sqrt((R - G)**2 + (R - B) * (G - B))
+    theta = np.arccos(numerator / (denominator + 1e-6))
+
+    H[B > G] = 2 * np.pi - theta[B > G]
+    H[B <= G] = theta[B <= G]
+    H = H / (2 * np.pi)  # Normalize to [0, 1]
+
+    hsi_image = np.dstack((H, S, I))
+    return hsi_image
+
+# Main function for color space conversions
+def color_space_conversions(image_path):
+    # Load an RGB image
+    image = cv2.imread(image_path)
+    if image is None:
+        print("Error: Could not open the image.")
+        return
+
+    # Convert RGB to YCbCr
+    ycbcr_image = cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb)
+
+    # Convert RGB to HSI
+    hsi_image = rgb_to_hsi(image)
+
+    # Display the images
+    plt.figure(figsize=(15, 5))
+    plt.subplot(1, 3, 1), plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)), plt.title("Original RGB Image")
+    plt.subplot(1, 3, 2), plt.imshow(ycbcr_image), plt.title("YCbCr Image")
+    plt.subplot(1, 3, 3), plt.imshow(hsi_image), plt.title("HSI Image")
+    plt.show()
+
+# Run color space conversion
+image_path = input("Enter the path of the image for color space conversions: ")
+color_space_conversions(image_path)
+
+def color_histogram_equalization(image_path):
+    # Load an RGB image
+    image = cv2.imread(image_path)
+    if image is None:
+        print("Error: Could not open the image.")
+        return
+
+    # Convert the image to YCbCr color space
+    ycbcr_image = cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb)
+
+    # Apply histogram equalization only to the Y channel
+    ycbcr_image[:,:,0] = cv2.equalizeHist(ycbcr_image[:,:,0])
+
+    # Convert back to RGB color space
+    equalized_image = cv2.cvtColor(ycbcr_image, cv2.COLOR_YCrCb2BGR)
+
+    # Display the original and equalized images
+    plt.figure(figsize=(10, 5))
+    plt.subplot(1, 2, 1), plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)), plt.title("Original Image")
+    plt.subplot(1, 2, 2), plt.imshow(cv2.cvtColor(equalized_image, cv2.COLOR_BGR2RGB)), plt.title("Histogram Equalized Image")
+    plt.show()
+
+# Run color histogram equalization
+color_histogram_equalization(image_path)
+
+def color_edge_detection(image_path, method="canny"):
+    # Load an RGB image
+    image = cv2.imread(image_path)
+    if image is None:
+        print("Error: Could not open the image.")
+        return
+
+    # Convert to grayscale if necessary
+    if method == "canny":
+        # Apply Canny edge detection on each color channel
+        edges_b = cv2.Canny(image[:,:,0], 100, 200)
+        edges_g = cv2.Canny(image[:,:,1], 100, 200)
+        edges_r = cv2.Canny(image[:,:,2], 100, 200)
+
+        # Combine edges
+        edges = cv2.bitwise_or(edges_b, edges_g)
+        edges = cv2.bitwise_or(edges, edges_r)
+    elif method == "sobel":
+        # Apply Sobel edge detection on each color channel
+        sobel_x = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=5)
+        sobel_y = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=5)
+
+        # Combine edges
+        edges = cv2.magnitude(sobel_x, sobel_y).astype(np.uint8)
+    else:
+        print("Invalid method. Choose 'canny' or 'sobel'.")
+        return
+
+    # Display the result
+    plt.figure(figsize=(10, 5))
+    plt.subplot(1, 2, 1), plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)), plt.title("Original Image")
+    plt.subplot(1, 2, 2), plt.imshow(edges, cmap='gray'), plt.title(f"{method.capitalize()} Edge Detection")
+    plt.show()
+
+# Run color edge detection
+color_edge_detection(image_path, method="canny")
+color_edge_detection(image_path, method="sobel") # or method="sobel"

@@ -1,0 +1,35 @@
+import numpy as np
+
+# Define a simple 3x3 image
+image = np.array([
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+])
+
+# Define a 3x3 kernel
+kernel = np.array([
+    [1, 0, -1],
+    [1, 0, -1],
+    [1, 0, -1]
+])
+
+# Add zero padding around the image
+padding_size = 1  # To keep output size the same as the input
+padded_image = np.pad(image, pad_width=padding_size, mode='constant', constant_values=0)
+
+# Output matrix initialization (same size as input image)
+output = np.zeros_like(image)
+
+# Perform convolution
+for i in range(output.shape[0]):  # Rows
+    for j in range(output.shape[1]):  # Columns
+        # Extract the region of interest (matching the kernel size)
+        region = padded_image[i:i+3, j:j+3]
+        # Element-wise multiplication and sum
+        output[i, j] = np.sum(region * kernel)
+
+print("Original Image:\n", image)
+print("Padded Image:\n", padded_image)
+print("Kernel:\n", kernel)
+print("Output Image:\n", output)

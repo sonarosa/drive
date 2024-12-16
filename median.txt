@@ -1,0 +1,115 @@
+# Importing the modules
+import cv2
+import numpy as np
+
+# Reading the image
+image = cv2.imread('/content/lena.jpeg')
+
+# Applying the filter
+medianBlur = cv2.medianBlur(image, 9)
+
+# Showing the image
+cv2_imshow(image)
+cv2_imshow( medianBlur)
+
+cv2.waitKey()
+cv2.destroyAllWindows()
+
+mport numpy as np
+
+def apply_median_filter(image, filter_size=3):
+    """
+    Applies a median filter to an image without using inbuilt functions.
+    :param image: 2D NumPy array representing the image.
+    :param filter_size: Size of the kernel (must be odd, e.g., 3, 5, 7).
+    :return: Filtered image as a 2D NumPy array.
+    """
+    # Determine the padding size
+    padding_size = filter_size // 2
+
+    # Pad the image with zeros (zero-padding)
+    padded_image = np.pad(image, pad_width=padding_size, mode='constant', constant_values=0)
+
+    # Prepare the output array (same size as the input image)
+    filtered_image = np.zeros_like(image)
+
+    # Traverse the image pixel by pixel
+    for i in range(image.shape[0]):
+        for j in range(image.shape[1]):
+            # Extract the current region (filter_size x filter_size window)
+            region = padded_image[i:i+filter_size, j:j+filter_size]
+
+            # Flatten the region and find the median
+            median_value = np.median(region.flatten())  # Sort and find median manually if needed
+
+            # Set the median value to the center pixel of the output image
+            filtered_image[i, j] = median_value
+
+    return filtered_image
+
+# Example usage:
+# Define a small 5x5 noisy image
+image = np.array([
+    [10, 20, 30, 40, 50],
+    [5,  10, 20, 30, 40],
+    [10, 200, 30, 40, 10],
+    [10, 20, 200, 40, 50],
+    [5,  10, 30, 40, 50]
+])
+
+# Apply the median filter with a 3x3 kernel
+filtered_image = apply_median_filter(image, filter_size=3)
+
+print("Original Image:\n", image)
+print("Filtered Image:\n", filtered_image)
+
+import numpy as np
+from PIL import Image
+
+def apply_median_filter(image, filter_size=3):
+    """
+    Applies a median filter to an image without using inbuilt functions.
+    :param image: 2D NumPy array representing the grayscale image.
+    :param filter_size: Size of the kernel (must be odd, e.g., 3, 5, 7).
+    :return: Filtered image as a 2D NumPy array.
+    """
+    # Determine the padding size
+    padding_size = filter_size // 2
+
+    # Pad the image with zeros (zero-padding)
+    padded_image = np.pad(image, pad_width=padding_size, mode='constant', constant_values=0)
+
+    # Prepare the output array (same size as the input image)
+    filtered_image = np.zeros_like(image)
+
+    # Traverse the image pixel by pixel
+    for i in range(image.shape[0]):
+        for j in range(image.shape[1]):
+            # Extract the current region (filter_size x filter_size window)
+            region = padded_image[i:i+filter_size, j:j+filter_size]
+
+            # Find the median value manually
+            sorted_region = np.sort(region.flatten())
+            median_value = sorted_region[len(sorted_region) // 2]
+
+            # Set the median value to the output image
+            filtered_image[i, j] = median_value
+
+    return filtered_image
+
+# Load the input image (convert to grayscale)
+input_image_path = "/content/lena.jpeg"  # Replace with the path to your image
+image = Image.open(input_image_path).convert("L")  # Convert to grayscale
+image_array = np.array(image)
+
+# Apply the median filter
+filter_size = 5  # You can try other values like 5, 7, etc.
+filtered_image_array = apply_median_filter(image_array, filter_size=filter_size)
+
+# Convert the filtered image back to an image format and save it
+filtered_image = Image.fromarray(filtered_image_array)
+filtered_image.save("filtered_image.jpg")
+
+# Display the original and filtered images
+image.show(title="Original Image")
+filtered_image.show(title="Filtered Image")

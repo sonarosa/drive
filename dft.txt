@@ -1,0 +1,114 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from PIL import Image,ImageDraw
+import cmath
+image = Image.open("/content/lena.jpeg").convert("L")
+
+image = image.resize((60,60))
+#get the pixels of image into array
+f = np.asarray(image)
+M, N = np.shape(f) # (img x, img y)
+#show image
+plt.imshow(f, cmap='gray')
+plt.show()
+#padd image with size of P and Q
+P,Q = M*2-1,N*2-1
+shape = np.shape(f)
+#our padded array
+fp = np.zeros((P, Q))
+#import our image into padded array
+fp[:shape[0],:shape[1]] = f
+plt.imshow(fp, cmap='gray',vmin=0, vmax=255)
+plt.show()
+
+fpc = np.zeros((P, Q))
+for x in range(P):
+    for y in range(Q):
+        fpc[x,y]=fp[x,y]*np.power(-1,x+y)
+
+plt.imshow(fpc, cmap='gray',vmin=0, vmax=255)
+plt.show()
+
+def DFT2D(padded):
+    M,N = np.shape(padded)
+    dft2d = np.zeros((M,N),dtype=complex)
+    for k in range(M):
+        for l in range(N):
+            sum_matrix = 0.0
+            for m in range(M):
+                for n in range(N):
+                    e = cmath.exp(- 2j * np.pi * (float(k * m) / M + float(l * n) / N))
+                    sum_matrix +=  padded[m,n] * e
+            dft2d[k,l] = sum_matrix
+    return dft2d
+
+dft2d = DFT2D(fpc)
+plt.imshow(dft2d.real, cmap='gray')
+plt.show()
+
+def lowPass(padded):
+    #size of image
+    U,V = np.shape(padded)
+    #H is our filter
+    H = np.zeros((U,V))
+    D = np.zeros((U,V))
+    U0 = int(U/2)
+    V0 = int(V/2)
+    #cut off
+    D0 = 30
+    for u in range(U):
+        for v in range(V):
+            u2 = np.power(u,2)
+            v2 = np.power(v,2)
+            D[u,v] = np.sqrt(u2+v2)
+        
+    for u in range(U):
+        for v in range(V):        
+            if D[np.abs(u-U0),np.abs(v-V0)] <= D0:
+                H[u,v] = 1
+            else:
+                H[u,v] = 0
+    return H
+
+H = lowPass(dft2d)
+plt.imshow(H,cmap="gray")
+plt.show()
+
+
+
+G=np.multiply(dft2d,H)
+plt.imshow(G.real,cmap="gray")
+plt.show()
+
+def IDFT2D(dft2d):
+    M,N=dft2d.shape 
+    pixels = np.zeros((M,N))
+    for m in range(M):
+        for n in range(N):
+            sum_ = 0.0
+            for k in range(M):
+                for l in range(N):
+                    e = cmath.exp(2j * np.pi * (float(k * m) / N + float(l * n) / M))
+                    sum_ += dft2d[l][k] * e
+
+            pixel = sum_.real/M/N
+            pixels[n, m] = (pixel)
+    return pixels
+
+g = IDFT2D(G)
+plt.imshow(g,cmap="gray")
+plt.show()
+
+ga = np.asarray(g)
+P,Q=np.shape(ga)
+gp = np.zeros((P,Q))
+for x in range(P):
+    for y in range(Q):
+        gp[x,y] = ga[x,y]*np.power(-1,x+y)
+
+plt.imshow(gp,cmap="gray")
+plt.show(
+
+org_img=gp[:shape[0],:shape[1]]
+plt.imshow(org_img,cmap='gray')
+plt.show()

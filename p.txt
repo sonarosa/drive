@@ -1,0 +1,35 @@
+import math
+from collections import Counter, defaultdict
+
+# Step 1: Tokenize the Corpus
+corpus = ["the", "cat", "sat", "on", "the", "mat"]
+
+# Step 2: Calculate Frequencies
+word_freq = Counter(corpus)
+bigram_freq = Counter(zip(corpus[:-1], corpus[1:]))
+
+# Step 3: Calculate Probabilities
+total_words = len(corpus)
+p_word = defaultdict(float)
+p_bigram = defaultdict(float)
+
+for word, freq in word_freq.items():
+    p_word[word] = freq / total_words
+
+total_bigrams = len(corpus) - 1
+for bigram, freq in bigram_freq.items():
+    p_bigram[bigram] = freq / total_bigrams
+
+# Step 4: Calculate PMI for all Bigrams
+def calculate_pmi(bigram, p_bigram, p_word):
+    word1, word2 = bigram
+    return math.log2(max(p_bigram[bigram], 1e-10) / (max(p_word[word1], 1e-10) * max(p_word[word2], 1e-10)))
+
+all_pmi_scores = {bigram: calculate_pmi(bigram, p_bigram, p_word) for bigram in bigram_freq}
+
+# Print Results
+print("Word Frequencies:", dict(word_freq))
+print("Bigram Frequencies:", dict(bigram_freq))
+print("Word Probabilities:", dict(p_word))
+print("Bigram Probabilities:", dict(p_bigram))
+print("PMI Scores for all Bigrams:", all_pmi_scores)

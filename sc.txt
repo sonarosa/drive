@@ -1,0 +1,43 @@
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import words
+from collections import Counter
+from nltk.util import ngrams
+nltk.download('punkt_tab')
+nltk.download('words')
+
+class SimpleSpellChecker:
+    def __init__(self, corpus):
+        self.corpus = corpus.lower()
+        self.vocabulary = set(nltk.corpus.words.words())  # Use NLTK's words corpus
+        self.unigrams = Counter()
+        self.bigrams = Counter()
+        self.build_bigrams()
+
+    def build_bigrams(self):
+        tokens = word_tokenize(self.corpus)
+        self.unigrams = Counter(tokens)
+        self.bigrams = Counter(ngrams(tokens, 2))
+
+    def is_word_in_vocab(self, word):
+        return word in self.vocabulary
+
+    def correct_word(self, word):
+        if self.is_word_in_vocab(word):
+            return word  # Return the word if it's already correct
+
+        candidates = [w for w in self.vocabulary if nltk.edit_distance(word, w) <= 2]
+        return min(candidates, key=lambda w: nltk.edit_distance(word, w), default=word)
+
+    def correct_text(self, text):
+        tokens = word_tokenize(text.lower())
+        corrected_tokens = [self.correct_word(word) for word in tokens]
+        return ' '.join(corrected_tokens)
+
+# Usage
+corpus = "This is a simple example corpus with basic English words."
+spell_checker = SimpleSpellChecker(corpus)
+
+text_to_correct = "This is an exmple text with engh errors."
+corrected_text = spell_checker.correct_text(text_to_correct)
+print("Corrected Text:", corrected_text)

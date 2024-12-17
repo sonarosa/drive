@@ -1,0 +1,90 @@
+import numpy as np
+
+transition_probs = {
+    "START": {"NN": 0.5, "VB": 0.25, "JJ": 0.25, "RB": 0},
+    "NN": {"STOP": 0.25, "NN": 0.25, "VB": 0.5, "JJ": 0, "RB": 0},
+    "VB": {"STOP": 0.25, "NN": 0.25, "VB": 0, "JJ": 0.25, "RB": 0.25},
+    "JJ": {"STOP": 0, "NN": 0.75, "VB": 0, "JJ": 0.25, "RB": 0},
+    "RB": {"STOP": 0.5, "NN": 0.25, "VB": 0.25, "JJ": 0, "RB": 0},
+}
+
+emission_probs = {
+    "NN": {"time": 0.1, "flies": 0.01, "fast": 0.01},
+    "VB": {"time": 0.01, "flies": 0.1, "fast": 0.01},
+    "JJ": {"time": 0, "flies": 0, "fast": 0.1},
+    "RB": {"time": 0, "flies": 0, "fast": 0.1},
+}
+
+sentence = ["time", "flies", "fast"]
+tags = list(emission_probs.keys())  # Possible POS tags
+n = len(sentence)  # Sentence length
+m = len(tags)  # Number of tags
+
+# Initialize Viterbi and backpointer tables
+viterbi = np.zeros((m, n))
+backpointer = np.zeros((m, n), dtype=int)
+
+
+def initialize_viterbi():
+    for i, tag in enumerate(tags):
+        viterbi[i, 0] = transition_probs["START"].get(tag, 0) * emission_probs[tag].get(sentence[0], 0)
+    print("\nInitialization Step:")
+    print_viterbi_table()
+
+
+def recursion_step():
+    for t in range(1, len(sentence)):
+        for i, tag in enumerate(tags):
+            max_prob, max_state = 0, 0
+            for j, prev_tag in enumerate(tags):
+                prob = viterbi[j, t - 1] * transition_probs[prev_tag].get(tag, 0) * emission_probs[tag].get(sentence[t], 0)
+                if prob > max_prob:
+                    max_prob, max_state = prob, j
+            viterbi[i, t] = max_prob
+            backpointer[i, t] = max_state
+    print("\nRecursion Step:")
+    print_viterbi_table()
+    print("\nBackpointer Table:")
+    print_backpointer_table()
+
+
+def termination_step():
+    """ Find the best final state. """
+    max_prob, last_state = 0, 0
+    for i, tag in enumerate(tags):
+        prob = viterbi[i, n - 1] * transition_probs[tag].get("STOP", 0)
+        if prob > max_prob:
+            max_prob, last_state = prob, i
+    return last_state
+
+
+def backtrack(last_state):
+    sequence = []
+    current_state = last_state
+    for t in range(n - 1, -1, -1):
+        sequence.insert(0, tags[current_state])
+        current_state = backpointer[current_state, t]
+    return sequence
+
+
+def print_viterbi_table():
+    print(f"{'Word':<10} {' '.join([f'{word:^10}' for word in sentence])}")
+    for i, tag in enumerate(tags):
+        row = ' '.join([f'{viterbi[i, t]:.4f}' for t in range(n)])
+        print(f"{tag:<10} {row}")
+
+
+def print_backpointer_table():
+    print(f"{'Word':<10} {' '.join([f'{word:^10}' for word in sentence])}")
+    for i, tag in enumerate(tags):
+        row = ' '.join([f'{backpointer[i, t]}' for t in range(n)])
+        print(f"{tag:<10} {row}")
+
+
+
+initialize_viterbi()
+recursion_step()
+last_state = termination_step()
+tag_sequence = backtrack(last_state)
+
+print("\nMost probable POS tag sequence:", tag_sequence)

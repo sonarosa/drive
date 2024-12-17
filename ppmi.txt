@@ -1,0 +1,114 @@
+import numpy as np
+import math
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Step 1: Preprocess documents by tokenizing
+def preprocess(documents):
+    """Convert documents to lower case and tokenize into words."""
+    tokenized_docs = [doc.lower().split() for doc in documents]
+    return tokenized_docs
+
+# Step 2: Build the co-occurrence matrix
+def build_cooccurrence_matrix(tokenized_docs, window_size=2):
+    """Create a co-occurrence matrix with a given context window size."""
+    vocab = sorted(set(word for doc in tokenized_docs for word in doc))  # Unique words
+    word_to_id = {word: i for i, word in enumerate(vocab)}  # Mapping of word to index
+
+    cooccurrence = np.zeros((len(vocab), len(vocab)))
+
+    # Build the matrix
+    for doc in tokenized_docs:
+        for i, word in enumerate(doc):
+            word_id = word_to_id[word]
+            # Define the window range
+            start = max(0, i - window_size)
+            end = min(len(doc), i + window_size + 1)
+            for j in range(start, end):
+                if i != j:  # Exclude the word itself
+                    context_word_id = word_to_id[doc[j]]
+                    cooccurrence[word_id, context_word_id] += 1
+
+    return cooccurrence, vocab
+
+# Step 3: Compute the PPMI matrix
+def compute_ppmi_matrix(cooccurrence):
+    """Compute the Positive Pointwise Mutual Information (PPMI) matrix."""
+    total_count = np.sum(cooccurrence)  # Total co-occurrences
+    word_sums = np.sum(cooccurrence, axis=1)  # Word frequencies (row sums)
+    ppmi = np.zeros_like(cooccurrence)
+
+    # PMI formula: log2(p(x, y) / (p(x) * p(y)))
+    for i in range(cooccurrence.shape[0]):
+        for j in range(cooccurrence.shape[1]):
+            p_x_y = cooccurrence[i, j] / total_count  # Joint probability
+            p_x = word_sums[i] / total_count  # Word i probability
+            p_y = word_sums[j] / total_count  # Word j probability
+
+            if p_x_y > 0:  # Avoid log(0)
+                pmi = math.log2(p_x_y / (p_x * p_y))
+                ppmi[i, j] = max(pmi, 0)  # Only keep positive PMI values
+
+    return ppmi
+
+# Step 4: Calculate cosine similarity
+def calculate_cosine_similarity(matrix, item1, item2, vocab):
+    """Calculate cosine similarity between two words or documents."""
+    if item1 not in vocab or item2 not in vocab:
+        raise ValueError(f"'{item1}' or '{item2}' is not in the vocabulary.")
+
+    word_to_id = {word: i for i, word in enumerate(vocab)}
+    vector1 = matrix[word_to_id[item1]].reshape(1, -1)
+    vector2 = matrix[word_to_id[item2]].reshape(1, -1)
+
+    similarity = cosine_similarity(vector1, vector2)[0][0]
+    return similarity
+
+# Step 5: Calculate document vectors and similarity
+def compute_document_vectors(tokenized_docs, ppmi, vocab):
+    """Convert documents into vectors using the PPMI matrix."""
+    word_to_id = {word: i for i, word in enumerate(vocab)}
+    doc_vectors = []
+
+    for doc in tokenized_docs:
+        vector = np.zeros(len(vocab))
+        for word in doc:
+            if word in vocab:
+                vector += ppmi[word_to_id[word]]  # Sum PPMI vectors for words
+        doc_vectors.append(vector)
+
+    return np.array(doc_vectors)
+
+# Main Program
+if __name__ == "__main__":
+    # Example training documents
+    documents = [
+        "the cat sat on the mat",
+        "the dog barked at the mailman",
+        "the cat and the dog became friends"
+    ]
+
+    # Preprocess the documents
+    tokenized_docs = preprocess(documents)
+
+    # Build co-occurrence and PPMI matrices
+    cooccurrence, vocab = build_cooccurrence_matrix(tokenized_docs, window_size=2)
+    ppmi_matrix = compute_ppmi_matrix(cooccurrence)
+
+    # Display the PPMI matrix
+    print("Vocabulary:", vocab)
+    print("\nPPMI Matrix:")
+    print(ppmi_matrix)
+
+    # Calculate cosine similarity between words
+    word1, word2 = "cat", "dog"
+    similarity = calculate_cosine_similarity(ppmi_matrix, word1, word2, vocab)
+    print(f"\nCosine similarity between words '{word1}' and '{word2}': {similarity:.4f}")
+
+    # Convert documents into vectors and calculate document similarity
+    doc_vectors = compute_document_vectors(tokenized_docs, ppmi_matrix, vocab)
+    doc_similarity = cosine_similarity(doc_vectors)
+
+    print("\nCosine similarity between documents:")
+    for i in range(len(documents)):
+        for j in range(i + 1, len(documents)):
+            print(f"Document {i+1} and Document {j+1}: {doc_similarity[i, j]:.4f}")
